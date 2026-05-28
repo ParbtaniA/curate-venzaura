@@ -1,0 +1,7 @@
+{
+  "name": "curate-venzaura",
+  "version": "1.0.0",
+  "description": "AI Travel Wardrobe Curator by Venz Aura",
+  "private": true,
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curate · AI Travel Wardrobe by Venz Aura</title>
+<meta name="description" content="AI-powered travel wardrobe curator. Tell us your destination and we'll build your perfect outfit guide with real products, prices, and links.">
+<meta property="og:title" content="Curate by Venz Aura · AI Travel Wardrobe">
+<meta property="og:description" content="Your perfect travel wardrobe, curated by AI. Real products, real prices, real links.">
+<meta property="og:image" content="https://curate.venzaura.com/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#1a1a2e;--ink2:#2d2d4e;--silk:#f8f4ee;--cream:#ede8df;
+  --gold:#c8a96e;--gold2:#e8c98e;--teal:#2a8a8a;--teal2:#3db8b8;
+  --coral:#d4614a;--mist:#8899aa;--white:#ffffff;
+  --card:#ffffff;--border:rgba(200,169,110,0.25);
+  --shadow:0 8px 40px rgba(26,26,46,0.10);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--silk);color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* ── NAVBAR ── */
+nav{
+  background:var(--ink);padding:14px 32px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100;
+  border-bottom:1px solid rgba(200,169,110,0.15);
+}
+.nav-brand{font-family:'Playfair Display',serif;font-size:18px;color:var(--white);display:flex;align-items:center;gap:8px}
+.nav-brand span{color:var(--gold2)}
+.nav-tagline{font-size:11px;color:var(--mist);letter-spacing:2px;text-transform:uppercase}
+@media(max-width:500px){.nav-tagline{display:none}}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(135deg,var(--ink) 0%,var(--ink2) 55%,#1e3a5a 100%);
+  padding:64px 32px 56px;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 80% 120%,rgba(200,169,110,0.18) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 5% -10%,rgba(61,184,184,0.14) 0%,transparent 60%),
+    radial-gradient(ellipse 30% 50% at 95% 40%,rgba(200,169,110,0.07) 0%,transparent 60%);
+}
+.hero-inner{position:relative;z-index:1;max-width:680px;margin:0 auto;text-align:center}
+.hero-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--teal2);margin-bottom:14px;display:block}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(32px,6vw,58px);color:var(--white);font-weight:600;line-height:1.1;margin-bottom:16px}
+.hero-title em{font-style:italic;color:var(--gold2)}
+.hero-sub{font-size:15px;color:rgba(255,255,255,0.6);font-weight:300;line-height:1.7;max-width:480px;margin:0 auto 24px}
+.hero-divider{width:56px;height:2px;background:linear-gradient(90deg,var(--gold),var(--teal2));margin:0 auto;border-radius:2px}
+
+/* ── FORM ── */
+.form-section{max-width:700px;margin:0 auto;padding:44px 24px 20px}
+.form-card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:36px 32px;box-shadow:var(--shadow)}
+.step-label{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--teal);font-weight:500;margin-bottom:22px;display:block}
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:540px){.fields-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--mist);font-weight:500}
+.field input,.field select{
+  background:var(--silk);border:1.5px solid var(--border);border-radius:8px;
+  padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);
+  outline:none;transition:border-color .2s,box-shadow .2s;appearance:none;
+}
+.field input:focus,.field select:focus{border-color:var(--gold);background:var(--white);box-shadow:0 0 0 3px rgba(200,169,110,0.10)}
+.field.full{grid-column:1/-1}
+.activities-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.act-chip{
+  padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);
+  background:var(--silk);font-size:12px;color:var(--ink2);cursor:pointer;
+  transition:all .18s;user-select:none;font-family:'DM Sans',sans-serif;
+}
+.act-chip:hover{border-color:var(--gold);background:var(--white)}
+.act-chip.selected{background:var(--ink);color:var(--gold2);border-color:var(--ink)}
+.cta-row{display:flex;justify-content:center;margin-top:32px}
+.btn-curate{
+  background:linear-gradient(135deg,var(--ink) 0%,#1e3a5a 100%);
+  color:var(--gold2);border:none;border-radius:10px;
+  padding:16px 52px;font-family:'DM Sans',sans-serif;font-size:14px;
+  font-weight:500;letter-spacing:1.5px;cursor:pointer;text-transform:uppercase;
+  transition:transform .2s,box-shadow .2s;
+  box-shadow:0 4px 24px rgba(26,26,46,0.25);
+}
+.btn-curate:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 32px rgba(26,26,46,0.3)}
+.btn-curate:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── LOADING ── */
+.loading-section{max-width:500px;margin:0 auto;padding:80px 24px;display:flex;flex-direction:column;align-items:center;gap:28px;text-align:center}
+.spinner{width:56px;height:56px;border:3px solid rgba(200,169,110,0.18);border-top-color:var(--gold);border-radius:50%;animation:spin .85s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--ink)}
+.loading-steps{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+.lstep{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--mist);transition:color .3s;text-align:left}
+.lstep.active{color:var(--ink);font-weight:500}
+.lstep.done{color:var(--teal)}
+.lstep-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:all .3s}
+.lstep.active .lstep-dot{background:var(--gold);box-shadow:0 0 0 3px rgba(200,169,110,0.2)}
+.lstep.done .lstep-dot{background:var(--teal)}
+
+/* ── RESULTS ── */
+.results-section{max-width:920px;margin:0 auto;padding:0 20px 80px}
+.back-btn{background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 22px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--mist);cursor:pointer;transition:all .15s;margin:24px 0}
+.back-btn:hover{border-color:var(--gold);color:var(--ink)}
+
+/* summary banner */
+.summary-banner{background:linear-gradient(135deg,var(--ink) 0%,var(--ink2) 100%);border-radius:14px;padding:24px 28px;margin-bottom:32px;display:flex;flex-wrap:wrap;gap:24px;align-items:center}
+.sb-item{display:flex;flex-direction:column;gap:3px}
+.sb-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.35)}
+.sb-value{font-size:14px;color:var(--white);font-weight:500}
+.sb-div{width:1px;background:rgba(255,255,255,0.1);align-self:stretch;min-height:32px}
+
+/* palette */
+.palette-bar{margin:8px 0 28px}
+.section-eyebrow{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--teal);margin-bottom:6px;display:block}
+.section-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);margin-bottom:4px}
+.section-sub{font-size:12px;color:var(--mist);margin-bottom:14px}
+.palette-chips{display:flex;gap:10px;flex-wrap:wrap}
+.p-chip{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 8px;background:var(--white);border-radius:20px;border:1px solid var(--border);font-size:12px;color:var(--ink2);box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.p-swatch{width:22px;height:22px;border-radius:50%;border:2px solid rgba(0,0,0,0.08);flex-shrink:0}
+
+/* dress code */
+.dc-note{font-size:11.5px;color:var(--coral);background:rgba(212,97,74,0.07);border:1px solid rgba(212,97,74,0.2);border-radius:20px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px;margin-bottom:28px}
+
+/* category */
+.category-block{margin-bottom:40px}
+.cat-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:12px;border-bottom:1.5px solid var(--border)}
+.cat-icon{font-size:22px;width:40px;height:40px;background:var(--cream);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cat-name{font-family:'Playfair Display',serif;font-size:20px;color:var(--ink)}
+.cat-count{font-size:11px;color:var(--mist);letter-spacing:1px;margin-top:1px}
+.items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
+
+/* item card */
+.item-card{background:var(--white);border-radius:14px;overflow:hidden;border:1px solid var(--border);transition:transform .22s,box-shadow .22s;display:flex;flex-direction:column;cursor:default}
+.item-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(26,26,46,0.13)}
+.item-img-wrap{height:190px;background:var(--cream);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.item-img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.item-card:hover .item-img{transform:scale(1.05)}
+.item-fallback{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--mist);font-size:11px;text-align:center;padding:20px}
+.item-fallback .fi{font-size:40px}
+.qty-badge{position:absolute;top:10px;right:10px;background:var(--ink);color:var(--gold2);font-size:10px;font-weight:500;padding:3px 9px;border-radius:10px;letter-spacing:.5px}
+.item-body{padding:14px 16px 16px;flex:1;display:flex;flex-direction:column;gap:6px}
+.item-name{font-size:13px;font-weight:500;color:var(--ink);line-height:1.35}
+.item-desc{font-size:11.5px;color:var(--mist);line-height:1.55;flex:1}
+.item-dc{font-size:10px;color:var(--coral);background:rgba(212,97,74,0.07);border-radius:4px;padding:3px 8px;display:inline-block;margin-top:2px}
+.item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px}
+.item-price{font-size:13px;font-weight:600;color:var(--teal);flex-shrink:0}
+.item-link{font-size:11px;color:var(--gold);text-decoration:none;border:1px solid rgba(200,169,110,0.4);border-radius:6px;padding:5px 12px;transition:all .15s;white-space:nowrap}
+.item-link:hover{background:var(--gold);color:var(--white)}
+
+/* style tip */
+.style-tip{background:linear-gradient(135deg,rgba(42,138,138,0.07) 0%,rgba(200,169,110,0.06) 100%);border:1px solid rgba(42,138,138,0.2);border-radius:14px;padding:22px 28px;margin:4px 0 36px;display:flex;gap:16px;align-items:flex-start}
+.tip-icon{font-size:22px;flex-shrink:0}
+.tip-text{font-size:13px;color:var(--ink2);line-height:1.75}
+.tip-text strong{color:var(--teal);display:block;margin-bottom:4px;font-size:12px;letter-spacing:1px;text-transform:uppercase}
+
+/* packing list */
+.packing-card{background:var(--white);border-radius:16px;border:1px solid var(--border);padding:30px 28px;box-shadow:var(--shadow)}
+.packing-header{margin-bottom:22px}
+.packing-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--ink)}
+.packing-sub{font-size:12px;color:var(--mist);margin-top:4px}
+.pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0}
+.pack-row{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid rgba(200,169,110,0.1);cursor:pointer;transition:background .15s;border-radius:6px;padding-left:6px}
+.pack-row:hover{background:rgba(200,169,110,0.05)}
+.pack-row:last-child{border-bottom:none}
+.pack-check{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--silk)}
+.pack-check.checked{background:var(--teal);border-color:var(--teal)}
+.pack-check.checked::after{content:'✓';color:white;font-size:11px;font-weight:600}
+.pack-name{font-size:13px;color:var(--ink);flex:1;transition:all .15s}
+.pack-name.done{text-decoration:line-through;opacity:0.35}
+.pack-qty{font-size:11px;color:var(--mist);white-space:nowrap}
+.pack-price{font-size:12px;color:var(--teal);font-weight:500;white-space:nowrap}
+.total-bar{margin-top:22px;padding:18px 22px;background:linear-gradient(135deg,var(--ink) 0%,var(--ink2) 100%);border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+.total-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.4)}
+.total-val{font-size:22px;font-weight:600;color:var(--gold2)}
+
+/* error */
+.err-box{background:#fff5f5;border:1px solid #ffcccc;border-radius:12px;padding:22px 26px;color:#c0392b;font-size:13px;line-height:1.7;max-width:520px;margin:0 auto}
+
+/* footer */
+footer{background:var(--ink);padding:28px 32px;text-align:center;border-top:1px solid rgba(200,169,110,0.12)}
+.footer-brand{font-family:'Playfair Display',serif;font-size:16px;color:rgba(255,255,255,0.5);margin-bottom:6px}
+.footer-brand span{color:var(--gold2)}
+.footer-sub{font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:1.5px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">✦ <span>Curate</span> · Venz Aura</div>
+  <div class="nav-tagline">AI Travel Wardrobe</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <span class="hero-eyebrow">Powered by Claude AI · Real Products · Real Links</span>
+    <h1 class="hero-title">Your <em>Perfect</em><br>Travel Wardrobe</h1>
+    <p class="hero-sub">Tell us where you're going, for how long, and what you're doing — we'll curate every piece, with real products, prices, and where to buy them.</p>
+    <div class="hero-divider"></div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<main id="main"></main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">✦ <span>Curate</span> by Venz Aura</div>
+  <div class="footer-sub">AI-Powered Travel Wardrobe · curate.venzaura.com</div>
+</footer>
+
+<script>
+const ACTIVITIES = [
+  "Beach & Resort","Fine Dining","Island Hopping","Water Sports",
+  "Sightseeing","Hiking / Adventure","Nightlife","Spa Days","City Exploring","Day Trips"
+];
+
+let state = {
+  screen: "form",
+  form: { gender:"male", destination:"", startDate:"", endDate:"", activities:[] },
+  result: null, error: null, loadStep: 0, checked: {}
+};
+
+function render() {
+  const main = document.getElementById("main");
+  main.innerHTML = "";
+  if (state.screen === "form") renderForm(main);
+  else if (state.screen === "loading") renderLoading(main);
+  else renderResults(main);
+}
+
+/* ── FORM ── */
+function renderForm(root) {
+  const sec = el("section", { className:"form-section" });
+  const card = el("div", { className:"form-card" });
+  const f = state.form;
+
+  card.innerHTML = `
+    <span class="step-label">Trip Details · Fill in your trip info</span>
+    <div class="fields-grid">
+      <div class="field">
+        <label>Traveller</label>
+        <select id="f-gender">
+          <option value="male" ${f.gender==="male"?"selected":""}>Men's Wardrobe</option>
+          <option value="female" ${f.gender==="female"?"selected":""}>Women's Wardrobe</option>
+          <option value="both" ${f.gender==="both"?"selected":""}>Couple's Guide</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Destination</label>
+        <input id="f-dest" type="text" placeholder="e.g. Cancun, Paris, Tokyo…" value="${f.destination}">
+      </div>
+      <div class="field">
+        <label>Departure Date</label>
+        <input id="f-start" type="date" value="${f.startDate}">
+      </div>
+      <div class="field">
+        <label>Return Date</label>
+        <input id="f-end" type="date" value="${f.endDate}">
+      </div>
+      <div class="field full">
+        <label>Activities (select all that apply)</label>
+        <div class="activities-grid" id="acts"></div>
+      </div>
+    </div>
+    <div class="cta-row">
+      <button class="btn-curate" id="go-btn">✦ &nbsp;Curate My Wardrobe</button>
+    </div>`;
+
+  sec.appendChild(card);
+  root.appendChild(sec);
+
+  const actsGrid = card.querySelector("#acts");
+  ACTIVITIES.forEach(act => {
+    const chip = el("div", { className:"act-chip"+(f.activities.includes(act)?" selected":""), textContent:act });
+    chip.onclick = () => {
+      const i = state.form.activities.indexOf(act);
+      if (i===-1) state.form.activities.push(act); else state.form.activities.splice(i,1);
+      chip.classList.toggle("selected");
+    };
+    actsGrid.appendChild(chip);
+  });
+
+  card.querySelector("#f-gender").onchange = e => state.form.gender = e.target.value;
+  card.querySelector("#f-dest").oninput   = e => state.form.destination = e.target.value;
+  card.querySelector("#f-start").onchange = e => state.form.startDate = e.target.value;
+  card.querySelector("#f-end").onchange   = e => state.form.endDate = e.target.value;
+  card.querySelector("#go-btn").onclick   = startCuration;
+}
+
+/* ── LOADING ── */
+function renderLoading(root) {
+  const steps = ["Analysing destination & climate…","Curating outfit categories…","Searching real products…","Building your wardrobe…"];
+  const sec = el("div", { className:"loading-section" });
+  sec.innerHTML = `
+    <div class="spinner"></div>
+    <div>
+      <h2 class="loading-title">Building your wardrobe…</h2>
+      <p style="font-size:12px;color:var(--mist);margin-top:6px">This takes about 20–30 seconds</p>
+    </div>
+    <div class="loading-steps">
+      ${steps.map((s,i)=>`<div class="lstep ${i<state.loadStep?"done":i===state.loadStep?"active":""}" id="ls-${i}"><div class="lstep-dot"></div><span>${s}</span></div>`).join("")}
+    </div>`;
+  root.appendChild(sec);
+}
+
+function tickLoad(n) {
+  state.loadStep = n;
+  [0,1,2,3].forEach(i => {
+    const e = document.getElementById("ls-"+i);
+    if (!e) return;
+    e.className = "lstep"+(i<n?" done":i===n?" active":"");
+  });
+}
+
+/* ── API CALL ── */
+async function startCuration() {
+  const { gender, destination, startDate, endDate, activities } = state.form;
+  if (!destination.trim()) { alert("Please enter a destination."); return; }
+  state.screen = "loading"; state.loadStep = 0; state.error = null;
+  render();
+
+  const nights = (startDate && endDate)
+    ? Math.max(1, Math.round((new Date(endDate)-new Date(startDate))/(86400000)))
+    : 5;
+
+  [1200,2800,5200].forEach((ms,i) => setTimeout(() => { if(state.screen==="loading") tickLoad(i+1); }, ms));
+
+  try {
+    const res = await fetch("/api/curate", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ gender, destination, startDate, endDate, activities, nights })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    state.result = data;
+    state.screen = "results";
+    state.checked = {};
+    render();
+    window.scrollTo({ top:0, behavior:"smooth" });
+  } catch(err) {
+    state.error = err.message;
+    state.screen = "results";
+    render();
+  }
+}
+
+/* ── RESULTS ── */
+function renderResults(root) {
+  const sec = el("div", { className:"results-section" });
+
+  const backBtn = el("button", { className:"back-btn", textContent:"← New Search" });
+  backBtn.onclick = () => { state.screen="form"; state.result=null; state.error=null; render(); window.scrollTo({top:0,behavior:"smooth"}); };
+  sec.appendChild(backBtn);
+
+  if (state.error || !state.result) {
+    sec.innerHTML += `<div class="err-box"><strong>Couldn't build your wardrobe.</strong><br>${state.error||"Unknown error"}<br><br><span style="font-size:12px;opacity:.7">Please try again.</span></div>`;
+    root.appendChild(sec); return;
+  }
+
+  const r = state.result;
+  const f = state.form;
+  const nights = (f.startDate&&f.endDate) ? Math.max(1,Math.round((new Date(f.endDate)-new Date(f.startDate))/86400000)) : 5;
+
+  // Summary banner
+  const banner = el("div", { className:"summary-banner" });
+  banner.innerHTML = `
+    <div class="sb-item"><span class="sb-label">Destination</span><span class="sb-value">${r.destination||f.destination}</span></div>
+    <div class="sb-div"></div>
+    <div class="sb-item"><span class="sb-label">Duration</span><span class="sb-value">${nights} Nights</span></div>
+    <div class="sb-div"></div>
+    <div class="sb-item"><span class="sb-label">Weather</span><span class="sb-value">${r.weather||"Warm"}</span></div>
+    <div class="sb-div"></div>
+    <div class="sb-item"><span class="sb-label">Activities</span><span class="sb-value">${(f.activities.slice(0,3).join(" · ")||"Resort") + (f.activities.length>3?" +more":"")}</span></div>`;
+  sec.appendChild(banner);
+
+  // Palette
+  if (r.palette?.length) {
+    const pb = el("div", { className:"palette-bar" });
+    pb.innerHTML = `
+      <span class="section-eyebrow">Colour Palette</span>
+      <h3 class="section-title">Everything Mixes & Matches</h3>
+      <p class="section-sub">All pieces in your wardrobe are built around this palette.</p>
+      <div class="palette-chips">
+        ${r.palette.map(p=>`<div class="p-chip"><div class="p-swatch" style="background:${p.hex}"></div>${p.name}</div>`).join("")}
+      </div>`;
+    sec.appendChild(pb);
+  }
+
+  // Dress code
+  if (r.dresscode_note) {
+    const dc = el("div", { className:"dc-note" });
+    dc.innerHTML = `👔 ${r.dresscode_note}`;
+    sec.appendChild(dc);
+  }
+
+  // Categories
+  (r.categories||[]).forEach(cat => {
+    const block = el("div", { className:"category-block" });
+    const header = el("div", { className:"cat-header" });
+    header.innerHTML = `<div class="cat-icon">${cat.icon||"👔"}</div><div><div class="cat-name">${cat.name}</div><div class="cat-count">${cat.items.length} item${cat.items.length!==1?"s":""}</div></div>`;
+    block.appendChild(header);
+
+    const grid = el("div", { className:"items-grid" });
+    (cat.items||[]).forEach(item => {
+      const card = el("div", { className:"item-card" });
+      const imgWrap = el("div", { className:"item-img-wrap" });
+
+      if (item.imageUrl) {
+        const img = el("img", { className:"item-img", src:item.imageUrl, alt:item.name });
+        img.onerror = () => { imgWrap.innerHTML = `<div class="item-fallback"><div class="fi">👔</div><span>${item.name}</span></div>`; };
+        imgWrap.appendChild(img);
+      } else {
+        imgWrap.innerHTML = `<div class="item-fallback"><div class="fi">👔</div><span>${item.name}</span></div>`;
+      }
+      if (item.qty > 1) {
+        const badge = el("div", { className:"qty-badge", textContent:"×"+item.qty });
+        imgWrap.appendChild(badge);
+      }
+      card.appendChild(imgWrap);
+
+      const body = el("div", { className:"item-body" });
+      body.innerHTML = `
+        <div class="item-name">${item.name}</div>
+        <div class="item-desc">${item.description}</div>
+        ${item.dresscode?`<div class="item-dc">${item.dresscode}</div>`:""}
+        <div class="item-footer">
+          <span class="item-price">${item.price}</span>
+          ${item.buyUrl?`<a class="item-link" href="${item.buyUrl}" target="_blank" rel="noopener noreferrer">Shop →</a>`:""}
+        </div>`;
+      card.appendChild(body);
+      grid.appendChild(card);
+    });
+    block.appendChild(grid);
+    sec.appendChild(block);
+  });
+
+  // Style tip
+  if (r.style_tip) {
+    const tip = el("div", { className:"style-tip" });
+    tip.innerHTML = `<div class="tip-icon">✦</div><div class="tip-text"><strong>Stylist's Note</strong>${r.style_tip}</div>`;
+    sec.appendChild(tip);
+  }
+
+  // Packing list
+  const allItems = [];
+  (r.categories||[]).forEach(cat => (cat.items||[]).forEach(item => allItems.push({...item, cat:cat.name})));
+  const tMin = r.packing_total_min || allItems.reduce((s,i)=>s+(i.priceMin||0)*i.qty,0);
+  const tMax = r.packing_total_max || allItems.reduce((s,i)=>s+(i.priceMax||0)*i.qty,0);
+
+  const packCard = el("div", { className:"packing-card" });
+  packCard.innerHTML = `
+    <div class="packing-header">
+      <h3 class="packing-title">Complete Packing List</h3>
+      <p class="packing-sub">Tap each row to check it off as you pack.</p>
+    </div>
+    <div class="pack-grid" id="packgrid"></div>
+    <div class="total-bar">
+      <span class="total-label">Estimated Total</span>
+      <span class="total-val">$${tMin} – $${tMax}</span>
+    </div>`;
+  sec.appendChild(packCard);
+
+  const packGrid = packCard.querySelector("#packgrid");
+  allItems.forEach((item, idx) => {
+    const row = el("div", { className:"pack-row" });
+    const chk = el("div", { className:"pack-check"+(state.checked[idx]?" checked":"") });
+    const name = el("span", { className:"pack-name"+(state.checked[idx]?" done":""), textContent:item.name });
+    const qty  = el("span", { className:"pack-qty", textContent:"×"+item.qty });
+    const price= el("span", { className:"pack-price", textContent:item.price });
+    row.append(chk, name, qty, price);
+    row.onclick = () => {
+      state.checked[idx] = !state.checked[idx];
+      chk.className = "pack-check"+(state.checked[idx]?" checked":"");
+      name.className = "pack-name"+(state.checked[idx]?" done":"");
+    };
+    packGrid.appendChild(row);
+  });
+
+  root.appendChild(sec);
+}
+
+/* helpers */
+function el(tag, props={}) {
+  const e = document.createElement(tag);
+  Object.assign(e, props);
+  return e;
+}
+
+render();
+</script>
+</body>
+</html>
