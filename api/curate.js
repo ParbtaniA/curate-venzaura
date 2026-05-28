@@ -8,77 +8,73 @@ export default async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured.' });
 
-  const { gender, destination, startDate, endDate, activities, nights } = req.body;
+  const { gender, destination, activities, nights } = req.body;
   if (!destination) return res.status(400).json({ error: 'Destination is required.' });
 
   const genderLabel = gender === 'male' ? "men's" : gender === 'female' ? "women's" : "couples'";
   const actList = activities?.length ? activities.slice(0, 5).join(', ') : 'resort activities';
   const tripNights = Math.min(nights || 5, 14);
 
-  const systemPrompt = `You are a travel wardrobe stylist. Return ONLY valid JSON, no markdown, no backticks, no extra text.
+  // Build retailer-specific search URLs from a plain text query
+  const buildSearchUrl = (searchQuery, retailer) => {
+    const q = encodeURIComponent(searchQuery);
+    const map = {
+      amazon:  `https://www.amazon.com/s?k=${q}`,
+      hm:      `https://www2.hm.com/en_us/search-results.html?q=${q}`,
+      uniqlo:  `https://www.uniqlo.com/us/en/search?q=${q}`,
+      zara:    `https://www.zara.com/us/en/search?searchTerm=${q}`,
+      target:  `https://www.target.com/s?searchTerm=${q}`,
+      asos:    `https://www.asos.com/us/search/?q=${q}`,
+    };
+    const key = (retailer || 'amazon').toLowerCase().replace(/[^a-z]/g, '');
+    return map[key] || map.amazon;
+  };
 
-Required JSON shape (follow exactly):
-{"destination":"string","weather":"string","palette":[{"name":"string","hex":"#xxxxxx"}],"dresscode_note":"string","style_tip":"string","categories":[{"name":"string","icon":"emoji","items":[{"name":"string","qty":1,"price":"$X-$Y","priceMin":0,"priceMax":0,"description":"string","buyUrl":"https://...","imageUrl":"","dresscode":null}]}],"packing_total_min":0,"packing_total_max":0}
+  const systemPrompt = `You are a travel wardrobe stylist. Return ONLY valid JSON — no markdown, no backticks, no explanation.
 
-Strict limits to keep response short:
-- Exactly 3 categories (e.g. Tops, Bottoms & Swimwear, Shoes & Accessories)
-- Exactly 2 items per category (6 items total)
-- description: max 15 words
-- buyUrl: amazon.com, hm.com, uniqlo.com, zara.com, or target.com product page
-- imageUrl: empty string ""
-- palette: exactly 3 colors`;
+JSON shape:
+{"destination":"string","weather":"string","palette":[{"name":"string","hex":"#xxxxxx"}],"dresscode_note":"string","style_tip":"string","categories":[{"name":"string","icon":"emoji","items":[{"name":"string","qty":1,"price":"$X-$Y","priceMin":0,"priceMax":0,"description":"string","searchQuery":"string","retailer":"amazon|hm|uniqlo|zara|target|asos","imageUrl":"","dresscode":null}]}],"packing_total_min":0,"packing_total_max":0}
 
-  const userPrompt = `${genderLabel} wardrobe: ${destination}, ${tripNights} nights, ${actList}. Mid-range budget. Return JSON only.`;
+Rules — follow exactly:
+- 3 categories, 2 items each (6 items total)
+- description: max 12 words
+- searchQuery: specific product search terms for this exact item, e.g. "mens white linen resort guayabera shirt" or "womens floral midi wrap dress beach"
+- retailer: best store for that specific item
+- imageUrl: always ""
+- palette: 3 colors`;
 
-  // Attempt to repair truncated JSON by closing open structures
+  const userPrompt = `${genderLabel} travel wardrobe for ${destination}, ${tripNights} nights, activities: ${actList}. Mid-range budget. Return JSON only.`;
+
   const repairJSON = (raw) => {
     let s = raw.replace(/```json|```/g, '').trim();
     const match = s.match(/\{[\s\S]*/);
     if (!match) return null;
     s = match[0];
-
-    // Remove trailing commas before closing brackets
     s = s.replace(/,\s*([\]}])/g, '$1');
-
-    // Count open braces/brackets and close them
-    let opens = 0, openBrackets = 0;
-    let inString = false, escape = false;
+    let opens = 0, brackets = 0, inStr = false, esc = false;
     for (const ch of s) {
-      if (escape) { escape = false; continue; }
-      if (ch === '\\' && inString) { escape = true; continue; }
-      if (ch === '"') { inString = !inString; continue; }
-      if (inString) continue;
-      if (ch === '{') opens++;
-      else if (ch === '}') opens--;
-      else if (ch === '[') openBrackets++;
-      else if (ch === ']') openBrackets--;
+      if (esc) { esc = false; continue; }
+      if (ch === '\\' && inStr) { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') opens++; else if (ch === '}') opens--;
+      else if (ch === '[') brackets++; else if (ch === ']') brackets--;
     }
-
-    // Close any open structures
-    while (openBrackets > 0) { s += ']'; openBrackets--; }
+    while (brackets > 0) { s += ']'; brackets--; }
     while (opens > 0) { s += '}'; opens--; }
-
-    // Final cleanup of trailing commas
-    s = s.replace(/,\s*([\]}])/g, '$1');
-    return s;
+    return s.replace(/,\s*([\]}])/g, '$1');
   };
 
-  const callAPI = async () => {
-    return fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2800,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
-  };
+  const callAPI = () => fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2800,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
 
   try {
     let response = await callAPI();
@@ -96,13 +92,20 @@ Strict limits to keep response short:
     }
 
     const repaired = repairJSON(rawText);
-    if (!repaired) return res.status(502).json({ error: 'Could not extract JSON from response.' });
+    if (!repaired) return res.status(502).json({ error: 'Could not extract JSON.' });
 
     let result;
-    try {
-      result = JSON.parse(repaired);
-    } catch (parseErr) {
-      return res.status(502).json({ error: `JSON parse failed: ${parseErr.message}` });
+    try { result = JSON.parse(repaired); }
+    catch (e) { return res.status(502).json({ error: `JSON parse failed: ${e.message}` }); }
+
+    // Convert searchQuery + retailer into a real, specific search URL
+    for (const cat of (result.categories || [])) {
+      for (const item of (cat.items || [])) {
+        const query = item.searchQuery || item.name;
+        item.buyUrl = buildSearchUrl(query, item.retailer);
+        delete item.searchQuery;
+        delete item.retailer;
+      }
     }
 
     res.status(200).json(result);
