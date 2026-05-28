@@ -260,7 +260,7 @@ function renderForm(root) {
       </div>
       <div class="field">
         <label>Return Date</label>
-        <input id="f-end" type="date" value="${f.endDate}">
+        <input id="f-end" type="date" value="${f.endDate}" ${f.startDate ? `min="${(() => { const d = new Date(f.startDate); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; })()}"` : ""}>
       </div>
       <div class="field full">
         <label>Activities (select all that apply)</label>
@@ -287,7 +287,24 @@ function renderForm(root) {
 
   card.querySelector("#f-gender").onchange = e => state.form.gender = e.target.value;
   card.querySelector("#f-dest").oninput   = e => state.form.destination = e.target.value;
-  card.querySelector("#f-start").onchange = e => state.form.startDate = e.target.value;
+  card.querySelector("#f-start").onchange = e => {
+    state.form.startDate = e.target.value;
+    const endInput = card.querySelector("#f-end");
+    // Set the minimum selectable end date to the day after start
+    if (e.target.value) {
+      const minEnd = new Date(e.target.value);
+      minEnd.setDate(minEnd.getDate() + 1);
+      const minEndStr = minEnd.toISOString().split("T")[0];
+      endInput.min = minEndStr;
+      // Clear end date if it's now before the new start date
+      if (state.form.endDate && state.form.endDate <= e.target.value) {
+        endInput.value = "";
+        state.form.endDate = "";
+      }
+    } else {
+      endInput.min = "";
+    }
+  };
   card.querySelector("#f-end").onchange   = e => state.form.endDate = e.target.value;
   card.querySelector("#go-btn").onclick   = startCuration;
 }
