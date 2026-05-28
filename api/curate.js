@@ -8,12 +8,17 @@ export default async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured.' });
 
-  const { gender, destination, activities, nights } = req.body;
+  const { gender, destination, activities, retailers, nights } = req.body;
   if (!destination) return res.status(400).json({ error: 'Destination is required.' });
 
   const genderLabel = gender === 'male' ? "men's" : gender === 'female' ? "women's" : "couples'";
   const actList = activities?.length ? activities.slice(0, 5).join(', ') : 'resort activities';
   const tripNights = Math.min(nights || 5, 14);
+  const ALL_RETAILERS = ["amazon","target","uniqlo","zara","hm","asos","nordstrom","gap"];
+  const allowedRetailers = (retailers && retailers.length)
+    ? retailers.filter(r => ALL_RETAILERS.includes(r))
+    : ALL_RETAILERS;
+  const retailerConstraint = `retailer: MUST be one of — ${allowedRetailers.join(", ")}`;
 
   // ── Build a real, working search URL ──────────────────────────────────────
   // Uses q= for all retailers so the search term always translates correctly.
@@ -55,7 +60,7 @@ Rules:
 - 3 categories, 2 items each (6 items total)
 - description: max 12 words
 - searchQuery: specific product keywords, e.g. "mens white linen short sleeve guayabera shirt resort"
-- retailer: one of — amazon, target, uniqlo, zara, hm, asos, nordstrom, gap
+- ${retailerConstraint}
 - imageUrl: always empty string ""
 - palette: 3 colors`;
 

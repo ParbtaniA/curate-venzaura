@@ -75,6 +75,8 @@ nav{
 }
 .act-chip:hover{border-color:var(--gold);background:var(--white)}
 .act-chip.selected{background:var(--ink);color:var(--gold2);border-color:var(--ink)}
+.ret-chip{display:flex;align-items:center;gap:6px}
+.ret-icon{font-size:15px;line-height:1}
 .cta-row{display:flex;justify-content:center;margin-top:32px}
 .btn-curate{
   background:linear-gradient(135deg,var(--ink) 0%,#1e3a5a 100%);
@@ -219,9 +221,20 @@ const ACTIVITIES = [
   "Sightseeing","Hiking / Adventure","Nightlife","Spa Days","City Exploring","Day Trips"
 ];
 
+const RETAILERS = [
+  { id:"amazon",    label:"Amazon",    icon:"📦" },
+  { id:"target",    label:"Target",    icon:"🎯" },
+  { id:"uniqlo",    label:"Uniqlo",    icon:"🗼" },
+  { id:"zara",      label:"Zara",      icon:"⚡" },
+  { id:"hm",        label:"H&M",       icon:"🌿" },
+  { id:"asos",      label:"ASOS",      icon:"🛍️" },
+  { id:"nordstrom", label:"Nordstrom", icon:"💎" },
+  { id:"gap",       label:"Gap",       icon:"👖" },
+];
+
 let state = {
   screen: "form",
-  form: { gender:"male", destination:"", startDate:"", endDate:"", activities:[] },
+  form: { gender:"male", destination:"", startDate:"", endDate:"", activities:[], retailers:[] },
   result: null, error: null, loadStep: 0, checked: {}
 };
 
@@ -266,6 +279,11 @@ function renderForm(root) {
         <label>Activities (select all that apply)</label>
         <div class="activities-grid" id="acts"></div>
       </div>
+      <div class="field full">
+        <label>Shop From (choose your preferred stores)</label>
+        <div class="activities-grid" id="retailers-grid"></div>
+        <p style="font-size:11px;color:var(--mist);margin-top:6px">Leave blank to include all stores</p>
+      </div>
     </div>
     <div class="cta-row">
       <button class="btn-curate" id="go-btn">✦ &nbsp;Curate My Wardrobe</button>
@@ -283,6 +301,18 @@ function renderForm(root) {
       chip.classList.toggle("selected");
     };
     actsGrid.appendChild(chip);
+  });
+
+  const retGrid = card.querySelector("#retailers-grid");
+  RETAILERS.forEach(r => {
+    const chip = el("div", { className:"act-chip ret-chip"+(f.retailers.includes(r.id)?" selected":"") });
+    chip.innerHTML = `<span class="ret-icon">${r.icon}</span> ${r.label}`;
+    chip.onclick = () => {
+      const i = state.form.retailers.indexOf(r.id);
+      if (i===-1) state.form.retailers.push(r.id); else state.form.retailers.splice(i,1);
+      chip.classList.toggle("selected");
+    };
+    retGrid.appendChild(chip);
   });
 
   card.querySelector("#f-gender").onchange = e => state.form.gender = e.target.value;
@@ -351,7 +381,7 @@ async function startCuration() {
     const res = await fetch("/api/curate", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ gender, destination, startDate, endDate, activities, nights })
+      body: JSON.stringify({ gender, destination, startDate, endDate, activities, retailers:state.form.retailers, nights })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Request failed");
