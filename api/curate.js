@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       amazon:   `https://www.amazon.com/s?k=${query}`,
       target:   `https://www.target.com/s?searchTerm=${query}`,
       uniqlo:   `https://www.uniqlo.com/us/en/search?q=${query}`,
-      zara:     `https://www.zara.com/us/en/search?searchTerm=${query}`,
+      zara:     `https://www.zara.com/us/en/search?searchTerm=${(rawQuery||'').trim().replace(/\s+/g,'%20')}`,
       hm:       `https://www2.hm.com/en_us/search-results.html?q=${query}`,
       hmcom:    `https://www2.hm.com/en_us/search-results.html?q=${query}`,
       asos:     `https://www.asos.com/search/?q=${query}`,
