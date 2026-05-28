@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,70 +12,49 @@ export default async function handler(req, res) {
   if (!destination) return res.status(400).json({ error: 'Destination is required.' });
 
   const genderLabel = gender === 'male' ? "men's" : gender === 'female' ? "women's" : "couples'";
-  const actList = activities?.length ? activities.join(', ') : 'general resort activities';
+  const actList = activities?.length ? activities.slice(0, 5).join(', ') : 'resort activities';
+  const tripNights = Math.min(nights || 5, 14);
 
-  const systemPrompt = `You are an expert travel wardrobe curator and personal stylist.
-Search for REAL, currently available products with actual URLs from retailers like Amazon, H&M, Zara, ASOS, Uniqlo, Target, Nordstrom, or similar.
-Return ONLY a valid JSON object — no markdown, no backticks, no preamble.
+  const systemPrompt = `You are a travel wardrobe stylist. Return ONLY valid JSON, no markdown or preamble.
 
-Required JSON shape:
-{
-  "destination": "string",
-  "weather": "string (e.g. Hot & humid, 85-92°F)",
-  "palette": [{"name":"string","hex":"string"}],
-  "dresscode_note": "string (1 sentence about dress codes at restaurants/venues)",
-  "style_tip": "string (1-2 sentences of signature style advice)",
-  "categories": [
-    {
-      "name": "string (e.g. Shirts & Tops)",
-      "icon": "emoji",
-      "items": [
-        {
-          "name": "string",
-          "qty": number,
-          "price": "string (e.g. $28-$45)",
-          "priceMin": number,
-          "priceMax": number,
-          "description": "string (1-2 sentences, specific and useful)",
-          "buyUrl": "string (real retailer URL)",
-          "imageUrl": "string (direct product image URL)",
-          "dresscode": "string or null"
-        }
-      ]
-    }
-  ],
-  "packing_total_min": number,
-  "packing_total_max": number
-}
+JSON shape:
+{"destination":"string","weather":"string","palette":[{"name":"string","hex":"string"}],"dresscode_note":"string","style_tip":"string","categories":[{"name":"string","icon":"emoji","items":[{"name":"string","qty":1,"price":"$X-$Y","priceMin":0,"priceMax":0,"description":"string","buyUrl":"string","imageUrl":"string","dresscode":null}]}],"packing_total_min":0,"packing_total_max":0}
 
-Search for real products. Provide real retailer URLs. For imageUrl use real product image URLs.
-Include 4-6 categories with 2-4 items each. Be specific to the destination, gender, activities, and trip duration.`;
+Rules:
+- 4 categories max, 3 items max each
+- buyUrl: real retailer URL (amazon.com, hm.com, uniqlo.com, zara.com, target.com, asos.com)
+- imageUrl: use reliable image CDNs or leave empty string if unsure
+- palette: 4 colors max
+- Be specific to destination climate and activities`;
 
-  const userPrompt = `Curate a complete ${genderLabel} travel wardrobe for:
-- Destination: ${destination}
-- Dates: ${startDate || 'upcoming trip'} to ${endDate || ''} (${nights || 5} nights)
-- Activities: ${actList}
-- Budget: comfortable but not extravagant (avoid luxury brands)
+  const userPrompt = `${genderLabel} wardrobe for ${destination}, ${tripNights} nights, activities: ${actList}. Mid-range budget.`;
 
-Search for real products available online right now. Include real product image URLs. Focus on breathable, elegant, versatile pieces appropriate for the climate and activities.`;
-
-  try {
+  const callAPI = async () => {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'interleaved-thinking-2025-05-14'
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
         system: systemPrompt,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content: userPrompt }]
       })
     });
+    return response;
+  };
+
+  try {
+    let response = await callAPI();
+
+    // Retry once after 5s if rate limited
+    if (response.status === 429) {
+      await new Promise(r => setTimeout(r, 5000));
+      response = await callAPI();
+    }
 
     const data = await response.json();
     if (!response.ok) return res.status(502).json({ error: data.error?.message || 'Upstream error' });
