@@ -358,7 +358,8 @@ async function startCuration() {
     state.result = data;
     state.screen = "results";
     state.checked = {};
-    history.pushState({ screen:"results", result:data, form:state.form }, "");
+    try { sessionStorage.setItem("curate_result", JSON.stringify(data)); } catch(e) {}
+    history.pushState({ screen:"results", form:state.form }, "");
     render();
     window.scrollTo({ top:0, behavior:"smooth" });
   } catch(err) {
@@ -373,7 +374,13 @@ function renderResults(root) {
   const sec = el("div", { className:"results-section" });
 
   const backBtn = el("button", { className:"back-btn", textContent:"← New Search" });
-  backBtn.onclick = () => history.back();
+  backBtn.onclick = () => {
+    try { sessionStorage.removeItem("curate_result"); } catch(e) {}
+    // Push a clean form state so back from here exits the site, not loops
+    history.pushState({ screen:"form", form:state.form }, "");
+    state.screen = "form"; state.result = null; state.error = null;
+    render(); window.scrollTo({ top:0, behavior:"smooth" });
+  };
   sec.appendChild(backBtn);
 
   if (state.error || !state.result) {
@@ -510,17 +517,42 @@ function el(tag, props={}) {
   return e;
 }
 
-// Seed initial history entry so back from results lands on form
-history.replaceState({ screen:"form", form:state.form }, "");
+// ── Restore from sessionStorage on page load (handles reload-on-back) ──
+(function() {
+  try {
+    const saved = sessionStorage.getItem("curate_result");
+    const hs    = history.state;
+    // If history says we were on results AND we have saved data, restore it
+    if (hs && hs.screen === "results" && saved) {
+      state.result = JSON.parse(saved);
+      state.screen = "results";
+      state.form   = hs.form || state.form;
+      // No replaceState needed — history entry already exists
+    } else {
+      history.replaceState({ screen:"form", form:state.form }, "");
+    }
+  } catch(e) {
+    history.replaceState({ screen:"form", form:state.form }, "");
+  }
+})();
 
-// Handle browser back/forward
+// ── Handle browser back / forward ──
 window.addEventListener("popstate", e => {
   if (!e.state) return;
-  state.screen  = e.state.screen  || "form";
-  state.result  = e.state.result  || null;
-  state.form    = e.state.form    || state.form;
-  state.checked = e.state.checked || {};
-  state.error   = null;
+  const screen = e.state.screen || "form";
+  if (screen === "results") {
+    try {
+      const saved = sessionStorage.getItem("curate_result");
+      state.result  = saved ? JSON.parse(saved) : null;
+    } catch(e) { state.result = null; }
+    state.form    = e.state.form || state.form;
+    state.checked = {};
+    state.screen  = state.result ? "results" : "form";
+  } else {
+    state.screen  = "form";
+    state.result  = null;
+  }
+  state.error = null;
   render();
   window.scrollTo({ top:0, behavior:"smooth" });
 });
