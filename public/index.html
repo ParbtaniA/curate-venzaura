@@ -139,6 +139,8 @@ nav{
 .item-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(26,26,46,0.13)}
 .item-img-wrap{height:190px;background:var(--cream);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .item-img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.img-skeleton{width:100%;height:100%;background:linear-gradient(90deg,var(--cream) 25%,#f5efe5 50%,var(--cream) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .item-card:hover .item-img{transform:scale(1.05)}
 .item-fallback{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--mist);font-size:11px;text-align:center;padding:20px}
 .item-fallback .fi{font-size:40px}
@@ -466,9 +468,18 @@ function renderResults(root) {
       const card = el("div", { className:"item-card" });
       const imgWrap = el("div", { className:"item-img-wrap" });
 
-      if (item.imageUrl) {
-        const img = el("img", { className:"item-img", src:item.imageUrl, alt:item.name });
-        img.onerror = () => { imgWrap.innerHTML = `<div class="item-fallback"><div class="fi">👔</div><span>${item.name}</span></div>`; };
+      if (item.imageUrl && item.imageUrl.startsWith('http')) {
+        // Show skeleton while image loads
+        const skeleton = el("div", { className:"img-skeleton" });
+        imgWrap.appendChild(skeleton);
+        const img = el("img", { className:"item-img", alt:item.name });
+        img.style.display = "none";
+        img.onload  = () => { skeleton.remove(); img.style.display = ""; };
+        img.onerror = () => {
+          skeleton.remove();
+          imgWrap.innerHTML = `<div class="item-fallback"><div class="fi">👔</div><span>${item.name}</span></div>`;
+        };
+        img.src = item.imageUrl;
         imgWrap.appendChild(img);
       } else {
         imgWrap.innerHTML = `<div class="item-fallback"><div class="fi">👔</div><span>${item.name}</span></div>`;
