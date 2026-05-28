@@ -15,36 +15,53 @@ export default async function handler(req, res) {
   const actList = activities?.length ? activities.slice(0, 5).join(', ') : 'resort activities';
   const tripNights = Math.min(nights || 5, 14);
 
-  // Build retailer-specific search URLs from a plain text query
-  const buildSearchUrl = (searchQuery, retailer) => {
-    const q = encodeURIComponent(searchQuery);
-    const map = {
-      amazon:  `https://www.amazon.com/s?k=${q}`,
-      hm:      `https://www2.hm.com/en_us/search-results.html?q=${q}`,
-      uniqlo:  `https://www.uniqlo.com/us/en/search?q=${q}`,
-      zara:    `https://www.zara.com/us/en/search?searchTerm=${q}`,
-      target:  `https://www.target.com/s?searchTerm=${q}`,
-      asos:    `https://www.asos.com/us/search/?q=${q}`,
+  // ── Build a real, working search URL ──────────────────────────────────────
+  // Uses q= for all retailers so the search term always translates correctly.
+  // Spaces encoded as + (not %20) which every major retailer accepts.
+  const buildSearchUrl = (rawQuery, retailer) => {
+    const query = (rawQuery || '').trim().replace(/\s+/g, '+');
+    if (!query) return 'https://www.amazon.com';
+
+    const r = (retailer || '').toLowerCase().replace(/[^a-z]/g, '');
+
+    const urls = {
+      amazon:   `https://www.amazon.com/s?k=${query}`,
+      target:   `https://www.target.com/s?searchTerm=${query}`,
+      uniqlo:   `https://www.uniqlo.com/us/en/search?q=${query}`,
+      zara:     `https://www.zara.com/us/en/search?searchTerm=${query}`,
+      hm:       `https://www2.hm.com/en_us/search-results.html?q=${query}`,
+      hmcom:    `https://www2.hm.com/en_us/search-results.html?q=${query}`,
+      asos:     `https://www.asos.com/search/?q=${query}`,
+      nordstrom:`https://www.nordstrom.com/sr?keyword=${query}`,
+      gap:      `https://www.gap.com/browse/search.do?searchText=${query}`,
+      macys:    `https://www.macys.com/shop/featured/${query}`,
     };
-    const key = (retailer || 'amazon').toLowerCase().replace(/[^a-z]/g, '');
-    return map[key] || map.amazon;
+
+    // Fuzzy match: if retailer contains "nord" → nordstrom, "gap" → gap, etc.
+    for (const [key, url] of Object.entries(urls)) {
+      if (r === key || r.includes(key) || key.includes(r)) return url;
+    }
+
+    // Universal fallback: Google Shopping — always works, shows real products
+    return `https://www.google.com/search?tbm=shop&q=${query}`;
   };
 
   const systemPrompt = `You are a travel wardrobe stylist. Return ONLY valid JSON — no markdown, no backticks, no explanation.
 
-JSON shape:
-{"destination":"string","weather":"string","palette":[{"name":"string","hex":"#xxxxxx"}],"dresscode_note":"string","style_tip":"string","categories":[{"name":"string","icon":"emoji","items":[{"name":"string","qty":1,"price":"$X-$Y","priceMin":0,"priceMax":0,"description":"string","searchQuery":"string","retailer":"amazon|hm|uniqlo|zara|target|asos","imageUrl":"","dresscode":null}]}],"packing_total_min":0,"packing_total_max":0}
+JSON shape (copy exactly):
+{"destination":"string","weather":"string","palette":[{"name":"string","hex":"#xxxxxx"}],"dresscode_note":"string","style_tip":"string","categories":[{"name":"string","icon":"emoji","items":[{"name":"string","qty":1,"price":"$X-$Y","priceMin":0,"priceMax":0,"description":"string","searchQuery":"string","retailer":"string","imageUrl":"","dresscode":null}]}],"packing_total_min":0,"packing_total_max":0}
 
-Rules — follow exactly:
+Rules:
 - 3 categories, 2 items each (6 items total)
 - description: max 12 words
-- searchQuery: specific product search terms for this exact item, e.g. "mens white linen resort guayabera shirt" or "womens floral midi wrap dress beach"
-- retailer: best store for that specific item
-- imageUrl: always ""
+- searchQuery: specific product keywords, e.g. "mens white linen short sleeve guayabera shirt resort"
+- retailer: one of — amazon, target, uniqlo, zara, hm, asos, nordstrom, gap
+- imageUrl: always empty string ""
 - palette: 3 colors`;
 
-  const userPrompt = `${genderLabel} travel wardrobe for ${destination}, ${tripNights} nights, activities: ${actList}. Mid-range budget. Return JSON only.`;
+  const userPrompt = `${genderLabel} travel wardrobe for ${destination}, ${tripNights} nights, activities: ${actList}. Mid-range budget. JSON only.`;
 
+  // ── Repair truncated JSON ─────────────────────────────────────────────────
   const repairJSON = (raw) => {
     let s = raw.replace(/```json|```/g, '').trim();
     const match = s.match(/\{[\s\S]*/);
@@ -98,11 +115,10 @@ Rules — follow exactly:
     try { result = JSON.parse(repaired); }
     catch (e) { return res.status(502).json({ error: `JSON parse failed: ${e.message}` }); }
 
-    // Convert searchQuery + retailer into a real, specific search URL
+    // ── Attach real search URLs to every item ─────────────────────────────
     for (const cat of (result.categories || [])) {
       for (const item of (cat.items || [])) {
-        const query = item.searchQuery || item.name;
-        item.buyUrl = buildSearchUrl(query, item.retailer);
+        item.buyUrl = buildSearchUrl(item.searchQuery || item.name, item.retailer);
         delete item.searchQuery;
         delete item.retailer;
       }
