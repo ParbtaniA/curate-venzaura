@@ -15,22 +15,56 @@ export default async function handler(req, res) {
   const actList = activities?.length ? activities.slice(0, 5).join(', ') : 'resort activities';
   const tripNights = Math.min(nights || 5, 14);
 
-  const systemPrompt = `You are a travel wardrobe stylist. Return ONLY valid JSON, no markdown or preamble.
+  const systemPrompt = `You are a travel wardrobe stylist. Return ONLY valid JSON, no markdown, no backticks, no extra text.
 
-JSON shape:
-{"destination":"string","weather":"string","palette":[{"name":"string","hex":"string"}],"dresscode_note":"string","style_tip":"string","categories":[{"name":"string","icon":"emoji","items":[{"name":"string","qty":1,"price":"$X-$Y","priceMin":0,"priceMax":0,"description":"string","buyUrl":"string","imageUrl":"string","dresscode":null}]}],"packing_total_min":0,"packing_total_max":0}
+Required JSON shape (follow exactly):
+{"destination":"string","weather":"string","palette":[{"name":"string","hex":"#xxxxxx"}],"dresscode_note":"string","style_tip":"string","categories":[{"name":"string","icon":"emoji","items":[{"name":"string","qty":1,"price":"$X-$Y","priceMin":0,"priceMax":0,"description":"string","buyUrl":"https://...","imageUrl":"","dresscode":null}]}],"packing_total_min":0,"packing_total_max":0}
 
-Rules:
-- 4 categories max, 3 items max each
-- buyUrl: real retailer URL (amazon.com, hm.com, uniqlo.com, zara.com, target.com, asos.com)
-- imageUrl: use reliable image CDNs or leave empty string if unsure
-- palette: 4 colors max
-- Be specific to destination climate and activities`;
+Strict limits to keep response short:
+- Exactly 3 categories (e.g. Tops, Bottoms & Swimwear, Shoes & Accessories)
+- Exactly 2 items per category (6 items total)
+- description: max 15 words
+- buyUrl: amazon.com, hm.com, uniqlo.com, zara.com, or target.com product page
+- imageUrl: empty string ""
+- palette: exactly 3 colors`;
 
-  const userPrompt = `${genderLabel} wardrobe for ${destination}, ${tripNights} nights, activities: ${actList}. Mid-range budget.`;
+  const userPrompt = `${genderLabel} wardrobe: ${destination}, ${tripNights} nights, ${actList}. Mid-range budget. Return JSON only.`;
+
+  // Attempt to repair truncated JSON by closing open structures
+  const repairJSON = (raw) => {
+    let s = raw.replace(/```json|```/g, '').trim();
+    const match = s.match(/\{[\s\S]*/);
+    if (!match) return null;
+    s = match[0];
+
+    // Remove trailing commas before closing brackets
+    s = s.replace(/,\s*([\]}])/g, '$1');
+
+    // Count open braces/brackets and close them
+    let opens = 0, openBrackets = 0;
+    let inString = false, escape = false;
+    for (const ch of s) {
+      if (escape) { escape = false; continue; }
+      if (ch === '\\' && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') opens++;
+      else if (ch === '}') opens--;
+      else if (ch === '[') openBrackets++;
+      else if (ch === ']') openBrackets--;
+    }
+
+    // Close any open structures
+    while (openBrackets > 0) { s += ']'; openBrackets--; }
+    while (opens > 0) { s += '}'; opens--; }
+
+    // Final cleanup of trailing commas
+    s = s.replace(/,\s*([\]}])/g, '$1');
+    return s;
+  };
 
   const callAPI = async () => {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    return fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,20 +73,17 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 2800,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
       })
     });
-    return response;
   };
 
   try {
     let response = await callAPI();
-
-    // Retry once after 5s if rate limited
     if (response.status === 429) {
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 6000));
       response = await callAPI();
     }
 
@@ -63,11 +94,17 @@ Rules:
     for (const block of (data.content || [])) {
       if (block.type === 'text') rawText += block.text;
     }
-    rawText = rawText.replace(/```json|```/g, '').trim();
-    const match = rawText.match(/\{[\s\S]*\}/);
-    if (!match) return res.status(502).json({ error: 'Could not parse wardrobe data.' });
 
-    const result = JSON.parse(match[0]);
+    const repaired = repairJSON(rawText);
+    if (!repaired) return res.status(502).json({ error: 'Could not extract JSON from response.' });
+
+    let result;
+    try {
+      result = JSON.parse(repaired);
+    } catch (parseErr) {
+      return res.status(502).json({ error: `JSON parse failed: ${parseErr.message}` });
+    }
+
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
