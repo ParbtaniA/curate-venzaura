@@ -358,6 +358,7 @@ async function startCuration() {
     state.result = data;
     state.screen = "results";
     state.checked = {};
+    history.pushState({ screen:"results", result:data, form:state.form }, "");
     render();
     window.scrollTo({ top:0, behavior:"smooth" });
   } catch(err) {
@@ -372,7 +373,7 @@ function renderResults(root) {
   const sec = el("div", { className:"results-section" });
 
   const backBtn = el("button", { className:"back-btn", textContent:"← New Search" });
-  backBtn.onclick = () => { state.screen="form"; state.result=null; state.error=null; render(); window.scrollTo({top:0,behavior:"smooth"}); };
+  backBtn.onclick = () => history.back();
   sec.appendChild(backBtn);
 
   if (state.error || !state.result) {
@@ -508,6 +509,21 @@ function el(tag, props={}) {
   Object.assign(e, props);
   return e;
 }
+
+// Seed initial history entry so back from results lands on form
+history.replaceState({ screen:"form", form:state.form }, "");
+
+// Handle browser back/forward
+window.addEventListener("popstate", e => {
+  if (!e.state) return;
+  state.screen  = e.state.screen  || "form";
+  state.result  = e.state.result  || null;
+  state.form    = e.state.form    || state.form;
+  state.checked = e.state.checked || {};
+  state.error   = null;
+  render();
+  window.scrollTo({ top:0, behavior:"smooth" });
+});
 
 render();
 </script>
